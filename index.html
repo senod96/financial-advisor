@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Agent Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #e6f2ff; }
+        #chatbox { width: 80%; max-width: 800px; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; }
+        #messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+        #input-area { margin-top: 10px; }
+        #chart { margin-top: 20px; }
+        #news { margin-top: 20px; }
+        .message { margin-bottom: 10px; }
+        .user { color: blue; }
+        .bot { color: green; }
+    </style>
+</head>
+<body>
+    <div id="chatbox">
+        <h2>Stock Agent Chatbot</h2>
+        <div id="messages"></div>
+        <div id="input-area">
+            <input type="text" id="userMessage" placeholder="Type your message here..." style="width:70%;">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div id="chart"></div>
+        <div id="news"></div>
+    </div>
+    <script>
+        function sendMessage() {
+            var userMessage = document.getElementById("userMessage").value;
+            if(userMessage.trim() === "") return;
+            
+            var messagesDiv = document.getElementById("messages");
+            messagesDiv.innerHTML += '<div class="message user"><strong>User:</strong> ' + userMessage + '</div>';
+            document.getElementById("userMessage").value = "";
+            
+            // Send message to the Flask backend via POST
+            var formData = new FormData();
+            formData.append("message", userMessage);
+            
+            fetch("/get_response", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                messagesDiv.innerHTML += '<div class="message bot"><strong>Bot:</strong> ' + data.bot_response + '</div>';
+                
+                if(data.company) {
+                    if(data.chart_image) {
+                        document.getElementById("chart").innerHTML = '<h3>' + data.company + ' Stock Chart</h3><img src="data:image/png;base64,' + data.chart_image + '" style="max-width:100%;">';
+                    }
+                    if(data.news) {
+                        document.getElementById("news").innerHTML = '<h3>Latest News for ' + data.company + '</h3><p>' + data.news + '</p>';
+                    }
+                }
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
